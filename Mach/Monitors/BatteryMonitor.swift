@@ -48,11 +48,10 @@ final class BatteryMonitor: ObservableObject {
         let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
         if service != IO_OBJECT_NULL {
             if let val = IORegistryEntryCreateCFProperty(service, "CycleCount" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? Int { cycleCount = val }
-            let rawMaxCap = IORegistryEntryCreateCFProperty(service, "AppleRawMaxCapacity" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? Int
-            let maxCap = rawMaxCap ?? (IORegistryEntryCreateCFProperty(service, "MaxCapacity" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? Int)
-            if let maxCap = maxCap,
+            let nominalCap = IORegistryEntryCreateCFProperty(service, "NominalChargeCapacity" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? Int
+            if let nominalCap = nominalCap,
                let designCap = IORegistryEntryCreateCFProperty(service, "DesignCapacity" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? Int,
-               designCap > 0, maxCap > 100 { health = Double(maxCap) / Double(designCap) * 100 }
+               designCap > 0, nominalCap > 0 { health = Double(nominalCap) / Double(designCap) * 100 }
             if let optimized = IORegistryEntryCreateCFProperty(service, "OptimizedBatteryChargingEngaged" as CFString, kCFAllocatorDefault, 0)?.takeRetainedValue() as? Bool {
                 isOptimizedHolding = optimized && isPluggedIn && !isCharging
             }
