@@ -1,0 +1,39 @@
+name: Mach
+options:
+  bundleIdPrefix: com.mach
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "15.0"
+  minimumXcodeGenVersion: "2.38.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  Mach:
+    type: application
+    platform: macOS
+    sources:
+      - Mach
+    settings:
+      base:
+        INFOPLIST_FILE: Mach/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Mach/Mach.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: com.mach.app
+        PRODUCT_NAME: Mach
+        COMBINE_HIDPI_IMAGES: true
+  MachTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - MachTests
+    dependencies:
+      - target: Mach
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mach.tests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Mach.app/Contents/MacOS/Mach"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        GENERATE_INFOPLIST_FILE: YES

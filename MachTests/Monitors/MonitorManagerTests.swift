@@ -1,0 +1,32 @@
+import XCTest
+@testable import Mach
+
+final class MonitorManagerTests: XCTestCase {
+    func testMonitorManagerOwnsAllMonitors() {
+        let manager = MonitorManager()
+        XCTAssertNotNil(manager.cpu)
+        XCTAssertNotNil(manager.ram)
+        XCTAssertNotNil(manager.gpu)
+        XCTAssertNotNil(manager.disk)
+        XCTAssertNotNil(manager.network)
+        XCTAssertNotNil(manager.battery)
+    }
+    func testMonitorManagerStartStop() {
+        let manager = MonitorManager()
+        XCTAssertFalse(manager.isRunning)
+        manager.start()
+        XCTAssertTrue(manager.isRunning)
+        manager.stop()
+        XCTAssertFalse(manager.isRunning)
+    }
+    func testMonitorManagerPopoverInterval() {
+        let manager = MonitorManager()
+        manager.start()
+        XCTAssertEqual(manager.currentInterval, 10.0)
+        manager.popoverDidOpen()
+        XCTAssertEqual(manager.currentInterval, 1.0)
+        manager.popoverDidClose()
+        XCTAssertEqual(manager.currentInterval, 10.0)
+        manager.stop()
+    }
+}
