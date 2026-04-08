@@ -11,8 +11,12 @@ struct DNSCleaner: Cleaner {
     }
 
     func clean() async throws -> CleanResult {
-        let result = try await PrivilegeHelper.runWithPrivileges("dscacheutil -flushcache && killall -HUP mDNSResponder")
-        let success = result.exitCode == 0
-        return CleanResult(itemId: id, freedBytes: 0, success: success, error: success ? nil : result.errorOutput)
+        let flushResult = try await PrivilegeHelper.runWithPrivileges("dscacheutil -flushcache")
+        guard flushResult.exitCode == 0 else {
+            return CleanResult(itemId: id, freedBytes: 0, success: false, error: flushResult.errorOutput)
+        }
+        // Best effort — mDNSResponder may be restarting; don't fail the whole operation
+        _ = try? await PrivilegeHelper.runWithPrivileges("killall -HUP mDNSResponder")
+        return CleanResult(itemId: id, freedBytes: 0, success: true, error: nil)
     }
 }

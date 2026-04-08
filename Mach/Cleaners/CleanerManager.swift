@@ -5,6 +5,7 @@ final class CleanerManager: ObservableObject {
     @Published var items: [CleanItem] = []
     @Published var results: [String: CleanResult] = [:]
     @Published var inProgress: Set<String> = []
+    @Published private(set) var isScanning = false
     let quickCleanItemIds = ["system-cache", "app-logs", "temp-files", "memory"]
 
     init() {
@@ -27,16 +28,28 @@ final class CleanerManager: ObservableObject {
     }
 
     func scanAll() async {
+        let alreadyScanning = await MainActor.run { () -> Bool in
+            if isScanning { return true }
+            isScanning = true
+            return false
+        }
+        guard !alreadyScanning else { return }
+        defer { Task { @MainActor in isScanning = false } }
+
         for (index, cleaner) in cleaners.enumerated() {
-            guard cleaner.isAvailable else { continue }
+            let available = await cleaner.checkAvailable()
+            await MainActor.run { items[index].isAvailable = available }
+            guard available else { continue }
             let size = await cleaner.scanSize()
             await MainActor.run { items[index].sizeBytes = size > 0 ? size : nil }
         }
     }
 
     func clean(id: String) async {
-        guard let cleaner = cleaners.first(where: { $0.id == id }), cleaner.isAvailable else { return }
-        await MainActor.run { inProgress.insert(id) }
+        guard let cleaner = cleaners.first(where: { $0.id == id }) else { return }
+        let available = await cleaner.checkAvailable()
+        guard available else { return }
+        await MainActor.run { _ = inProgress.insert(id) }
         do {
             let result = try await cleaner.clean()
             await MainActor.run { results[id] = result; inProgress.remove(id) }
@@ -55,6 +68,6 @@ final class CleanerManager: ObservableObject {
     }
 
     func isAvailable(id: String) -> Bool {
-        cleaners.first(where: { $0.id == id })?.isAvailable ?? false
+        items.first(where: { $0.id == id })?.isAvailable ?? false
     }
 }

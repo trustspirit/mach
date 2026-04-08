@@ -6,6 +6,7 @@ final class RAMMonitor: ObservableObject {
     @Published var history: [Double] = []
     private let maxHistory = 60
     private let pageSize = UInt64(vm_kernel_page_size)
+    private let hostPort: mach_port_t = mach_host_self()
 
     func update() {
         let totalMemory = ProcessInfo.processInfo.physicalMemory
@@ -13,7 +14,7 @@ final class RAMMonitor: ObservableObject {
         var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
         let result = withUnsafeMutablePointer(to: &stats) { ptr in
             ptr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { intPtr in
-                host_statistics64(mach_host_self(), HOST_VM_INFO64, intPtr, &count)
+                host_statistics64(hostPort, HOST_VM_INFO64, intPtr, &count)
             }
         }
         guard result == KERN_SUCCESS else { return }

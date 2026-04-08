@@ -1,6 +1,6 @@
 import Foundation
-import Combine
 
+@MainActor
 final class MonitorManager: ObservableObject {
     let cpu = CPUMonitor()
     let ram = RAMMonitor()
@@ -11,20 +11,9 @@ final class MonitorManager: ObservableObject {
     let notifications = NotificationManager()
 
     @Published private(set) var isRunning = false
-    @Published private(set) var currentInterval: TimeInterval = 10.0
     private var timer: Timer?
-    private var cancellables = Set<AnyCancellable>()
     private let openInterval: TimeInterval = 1.0
     private let closedInterval: TimeInterval = 10.0
-
-    init() {
-        cpu.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(in: &cancellables)
-        ram.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(in: &cancellables)
-        gpu.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(in: &cancellables)
-        disk.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(in: &cancellables)
-        network.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(in: &cancellables)
-        battery.objectWillChange.sink { [weak self] in self?.objectWillChange.send() }.store(in: &cancellables)
-    }
 
     func start() {
         isRunning = true
@@ -49,10 +38,11 @@ final class MonitorManager: ObservableObject {
 
     private func scheduleTimer(interval: TimeInterval) {
         timer?.invalidate()
-        currentInterval = interval
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             self?.updateAll()
         }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
     }
 
     private func updateAll() {
@@ -63,5 +53,7 @@ final class MonitorManager: ObservableObject {
         network.update()
         battery.update()
         notifications.checkThresholds(manager: self)
+        // Snapshot apps on main, detect hogs on background queue
+        battery.scheduleHogDetection()
     }
 }

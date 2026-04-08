@@ -6,8 +6,8 @@ struct DockerCleaner: Cleaner {
     let category: CleanCategory = .developer
     let requiresRoot = false
 
-    var isAvailable: Bool {
-        ShellExecutor.toolExists("docker")
+    func checkAvailable() async -> Bool {
+        await ShellExecutor.toolExists("docker")
     }
 
     func scanSize() async -> UInt64 {

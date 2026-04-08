@@ -5,6 +5,7 @@ enum AlertMetric: String, CaseIterable {
     case cpu, ram, disk, battery, temperature
 }
 
+@MainActor
 final class NotificationManager: ObservableObject {
     @Published var alertsEnabled = true
     private var thresholds: [AlertMetric: Double] = [.cpu: 90, .ram: 90, .disk: 95, .battery: 15, .temperature: 95]

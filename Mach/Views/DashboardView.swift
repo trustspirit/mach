@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum DashboardRoute: Hashable {
-    case dashboard, cpuDetail, gpuDetail, ramDetail, diskDetail, networkDetail, batteryDetail, cleaner, settings
+    case dashboard, cleaner, settings
 }
 
 struct DashboardView: View {
@@ -14,29 +14,37 @@ struct DashboardView: View {
             Divider()
             switch route {
             case .dashboard: dashboardContent
-            case .cleaner: CleanerView(onBack: { route = .dashboard })
-            case .settings: SettingsView().environmentObject(manager)
-            case .cpuDetail: CPUDetailView(monitor: manager.cpu, onBack: { route = .dashboard })
-            case .gpuDetail: GPUDetailView(monitor: manager.gpu, onBack: { route = .dashboard })
-            case .ramDetail: RAMDetailView(monitor: manager.ram, onBack: { route = .dashboard })
-            case .diskDetail: DiskDetailView(monitor: manager.disk, onBack: { route = .dashboard })
-            case .networkDetail: NetworkDetailView(monitor: manager.network, onBack: { route = .dashboard })
-            case .batteryDetail: BatteryDetailView(monitor: manager.battery, onBack: { route = .dashboard })
+            case .cleaner: CleanerView().frame(maxHeight: 400)
+            case .settings: SettingsView().environmentObject(manager).frame(maxHeight: 400)
             }
-        }.frame(width: 320, height: 480)
+        }
     }
 
     private var header: some View {
-        HStack {
+        HStack(spacing: 12) {
             if route != .dashboard {
-                Button { route = .dashboard } label: { Image(systemName: "chevron.left") }.buttonStyle(.plain)
+                Button { route = .dashboard } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.medium))
+                }.buttonStyle(.plain)
             }
             Text("Mach").font(.headline).fontWeight(.bold)
             Spacer()
             if route == .dashboard {
-                Button { route = .cleaner } label: { Image(systemName: "paintbrush") }.buttonStyle(.plain).help("Clean")
-                Button { route = .settings } label: { Image(systemName: "gearshape") }.buttonStyle(.plain).help("Settings")
-                Button { NSApplication.shared.terminate(nil) } label: { Image(systemName: "power") }.buttonStyle(.plain).help("Quit Mach")
+                HStack(spacing: 10) {
+                    Button { route = .cleaner } label: {
+                        Image(systemName: "paintbrush")
+                            .font(.body.weight(.medium))
+                    }.buttonStyle(.plain).help("Clean")
+                    Button { route = .settings } label: {
+                        Image(systemName: "gearshape")
+                            .font(.body.weight(.medium))
+                    }.buttonStyle(.plain).help("Settings")
+                    Button { NSApplication.shared.terminate(nil) } label: {
+                        Image(systemName: "power")
+                            .font(.body.weight(.medium))
+                    }.buttonStyle(.plain).help("Quit Mach")
+                }
             }
         }.padding(.horizontal, 14).padding(.vertical, 10)
     }
@@ -44,15 +52,15 @@ struct DashboardView: View {
     private var dashboardContent: some View {
         ScrollView {
             VStack(spacing: 8) {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                    CPUTileView(monitor: manager.cpu).onTapGesture { route = .cpuDetail }
-                    GPUTileView(monitor: manager.gpu).onTapGesture { route = .gpuDetail }
-                    RAMTileView(monitor: manager.ram).onTapGesture { route = .ramDetail }
-                    DiskTileView(monitor: manager.disk).onTapGesture { route = .diskDetail }
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                    CPUTileView(monitor: manager.cpu)
+                    GPUTileView(monitor: manager.gpu)
+                    RAMTileView(monitor: manager.ram)
+                    DiskTileView(monitor: manager.disk)
                 }
-                NetworkTileView(monitor: manager.network).onTapGesture { route = .networkDetail }
-                BatteryTileView(monitor: manager.battery).onTapGesture { route = .batteryDetail }
-            }.padding(10)
-        }
+                NetworkTileView(monitor: manager.network)
+                BatteryTileView(monitor: manager.battery)
+            }.padding(12)
+        }.scrollIndicators(.hidden)
     }
 }

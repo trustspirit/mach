@@ -7,16 +7,22 @@ final class CPUMonitorTests: XCTestCase {
         XCTAssertEqual(monitor.metrics.totalUsage, 0)
         XCTAssertTrue(monitor.metrics.coreUsages.isEmpty)
     }
-    func testCPUMonitorUpdate() {
+    func testCPUMonitorFirstUpdateSkipped() {
         let monitor = CPUMonitor()
+        monitor.update()
+        // First call stores ticks but skips publishing usage
+        XCTAssertEqual(monitor.metrics.totalUsage, 0)
+        XCTAssertTrue(monitor.metrics.coreUsages.isEmpty)
+    }
+    func testCPUMonitorSecondUpdateProducesData() {
+        let monitor = CPUMonitor()
+        monitor.update()
+        // Small delay to accumulate tick deltas
+        Thread.sleep(forTimeInterval: 0.05)
         monitor.update()
         XCTAssertGreaterThanOrEqual(monitor.metrics.totalUsage, 0)
         XCTAssertLessThanOrEqual(monitor.metrics.totalUsage, 100)
         XCTAssertGreaterThan(monitor.metrics.coreUsages.count, 0)
-    }
-    func testCPUMonitorCoreUsagesInRange() {
-        let monitor = CPUMonitor()
-        monitor.update()
         for usage in monitor.metrics.coreUsages {
             XCTAssertGreaterThanOrEqual(usage, 0)
             XCTAssertLessThanOrEqual(usage, 100)

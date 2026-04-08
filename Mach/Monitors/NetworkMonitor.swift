@@ -5,6 +5,8 @@ final class NetworkMonitor: ObservableObject {
     @Published var metrics = NetworkMetrics()
     @Published var downloadHistory: [Double] = []
     @Published var uploadHistory: [Double] = []
+    @Published private(set) var peakDownload: Double = 1
+    @Published private(set) var peakUpload: Double = 1
     private let maxHistory = 60
     private var previousBytesIn: UInt64 = 0
     private var previousBytesOut: UInt64 = 0
@@ -19,11 +21,12 @@ final class NetworkMonitor: ObservableObject {
         var cursor: UnsafeMutablePointer<ifaddrs>? = firstAddr
         while let addr = cursor {
             let name = String(cString: addr.pointee.ifa_name)
-            if addr.pointee.ifa_addr.pointee.sa_family == UInt8(AF_LINK) {
+            if addr.pointee.ifa_addr.pointee.sa_family == UInt8(AF_LINK),
+               name.hasPrefix("en") || name.hasPrefix("pdp_ip") {
                 let data = unsafeBitCast(addr.pointee.ifa_data, to: UnsafeMutablePointer<if_data>.self)
                 totalIn += UInt64(data.pointee.ifi_ibytes)
                 totalOut += UInt64(data.pointee.ifi_obytes)
-                if name.hasPrefix("en") && (primaryInterface.isEmpty || name == "en0") {
+                if primaryInterface.isEmpty || name == "en0" {
                     primaryInterface = name
                 }
             }
@@ -41,9 +44,16 @@ final class NetworkMonitor: ObservableObject {
         }
         metrics.interfaceName = primaryInterface
         previousBytesIn = totalIn; previousBytesOut = totalOut; previousTime = now
-        downloadHistory.append(Double(metrics.downloadSpeed))
+
+        let dl = Double(metrics.downloadSpeed)
+        let ul = Double(metrics.uploadSpeed)
+        downloadHistory.append(dl)
         if downloadHistory.count > maxHistory { downloadHistory.removeFirst() }
-        uploadHistory.append(Double(metrics.uploadSpeed))
+        uploadHistory.append(ul)
         if uploadHistory.count > maxHistory { uploadHistory.removeFirst() }
+
+        // Track peak from current history window for stable graph Y-axis
+        peakDownload = max(downloadHistory.max() ?? 1, 1)
+        peakUpload = max(uploadHistory.max() ?? 1, 1)
     }
 }

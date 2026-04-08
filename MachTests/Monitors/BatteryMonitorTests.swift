@@ -1,6 +1,7 @@
 import XCTest
 @testable import Mach
 
+@MainActor
 final class BatteryMonitorTests: XCTestCase {
     func testBatteryMonitorInitialState() {
         let monitor = BatteryMonitor()
@@ -19,15 +20,9 @@ final class BatteryMonitorTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(monitor.metrics.health, 0)
         XCTAssertLessThanOrEqual(monitor.metrics.health, 100)
     }
-    func testTriggerFullCharge() async {
+    func testEnergyModeDefault() {
         let monitor = BatteryMonitor()
-        let canTrigger = monitor.metrics.canTriggerFullCharge
-        XCTAssertFalse(canTrigger)
-    }
-    func testGetCurrentEnergyMode() async {
-        let monitor = BatteryMonitor()
-        let mode = await monitor.getCurrentEnergyMode()
-        let validModes: [EnergyMode] = [.lowPower, .automatic, .highPerformance]
-        XCTAssertTrue(validModes.contains(mode))
+        let validModes: [EnergyMode] = [.lowPower, .automatic]
+        XCTAssertTrue(validModes.contains(monitor.currentEnergyMode))
     }
 }

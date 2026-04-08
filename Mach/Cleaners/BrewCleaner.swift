@@ -6,8 +6,8 @@ struct BrewCleaner: Cleaner {
     let category: CleanCategory = .developer
     let requiresRoot = false
 
-    var isAvailable: Bool {
-        ShellExecutor.toolExists("brew")
+    func checkAvailable() async -> Bool {
+        await ShellExecutor.toolExists("brew")
     }
 
     func scanSize() async -> UInt64 {

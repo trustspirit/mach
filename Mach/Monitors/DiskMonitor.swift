@@ -46,8 +46,10 @@ final class DiskMonitor: ObservableObject {
         if let prevTime = previousTime {
             let elapsed = now.timeIntervalSince(prevTime)
             if elapsed > 0 {
-                metrics.readSpeed = UInt64(Double(totalRead - previousRead) / elapsed)
-                metrics.writeSpeed = UInt64(Double(totalWrite - previousWrite) / elapsed)
+                let deltaRead = totalRead >= previousRead ? totalRead - previousRead : 0
+                let deltaWrite = totalWrite >= previousWrite ? totalWrite - previousWrite : 0
+                metrics.readSpeed = UInt64(Double(deltaRead) / elapsed)
+                metrics.writeSpeed = UInt64(Double(deltaWrite) / elapsed)
             }
         }
         previousRead = totalRead; previousWrite = totalWrite; previousTime = now

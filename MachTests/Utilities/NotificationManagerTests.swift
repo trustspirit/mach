@@ -1,6 +1,7 @@
 import XCTest
 @testable import Mach
 
+@MainActor
 final class NotificationManagerTests: XCTestCase {
     func testThresholdCPU() {
         let manager = NotificationManager()

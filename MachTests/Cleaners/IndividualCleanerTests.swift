@@ -26,14 +26,18 @@ final class IndividualCleanerTests: XCTestCase {
         XCTAssertEqual(cleaner.isAvailable, exists)
     }
 
-    func testDockerCleanerAvailability() {
+    func testDockerCleanerAvailability() async {
         let cleaner = DockerCleaner()
-        XCTAssertEqual(cleaner.isAvailable, ShellExecutor.toolExists("docker"))
+        let available = await cleaner.checkAvailable()
+        let expected = await ShellExecutor.toolExists("docker")
+        XCTAssertEqual(available, expected)
     }
 
-    func testBrewCleanerAvailability() {
+    func testBrewCleanerAvailability() async {
         let cleaner = BrewCleaner()
-        XCTAssertEqual(cleaner.isAvailable, ShellExecutor.toolExists("brew"))
+        let available = await cleaner.checkAvailable()
+        let expected = await ShellExecutor.toolExists("brew")
+        XCTAssertEqual(available, expected)
     }
 
     func testMemoryCleanerRequiresRoot() {

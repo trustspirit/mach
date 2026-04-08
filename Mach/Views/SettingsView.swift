@@ -4,7 +4,6 @@ import ServiceManagement
 struct SettingsView: View {
     @EnvironmentObject var manager: MonitorManager
     @AppStorage("launchAtLogin") private var launchAtLogin = false
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -32,8 +31,8 @@ struct SettingsView: View {
                     Text("Version 1.0.0").font(.caption).foregroundStyle(.secondary)
                     Text("System monitor & cleaner for developers").font(.caption).foregroundStyle(.secondary)
                 }
-            }.padding(14)
-        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            }.padding(16)
+        }.scrollIndicators(.hidden).frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func thresholdRow(_ label: String, value: String) -> some View {

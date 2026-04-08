@@ -20,8 +20,10 @@ final class ShellExecutorTests: XCTestCase {
         let result = try await ShellExecutor.shell("echo 'test output'")
         XCTAssertEqual(result.output.trimmingCharacters(in: .whitespacesAndNewlines), "test output")
     }
-    func testToolExists() {
-        XCTAssertTrue(ShellExecutor.toolExists("ls"))
-        XCTAssertFalse(ShellExecutor.toolExists("nonexistent_tool_xyz_123"))
+    func testToolExists() async {
+        let lsExists = await ShellExecutor.toolExists("ls")
+        XCTAssertTrue(lsExists)
+        let fakeExists = await ShellExecutor.toolExists("nonexistent_tool_xyz_123")
+        XCTAssertFalse(fakeExists)
     }
 }

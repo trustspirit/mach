@@ -26,6 +26,7 @@ struct GPUMetrics {
     var vramUsed: UInt64 = 0
     var vramTotal: UInt64 = 0
     var temperature: Double = 0
+    var name: String = ""
 }
 
 struct DiskMetrics {
@@ -45,21 +46,13 @@ struct NetworkMetrics {
     var downloadSpeed: UInt64 = 0
     var interfaceName: String = ""
 
-    var uploadFormatted: String { Self.formatSpeed(uploadSpeed) }
-    var downloadFormatted: String { Self.formatSpeed(downloadSpeed) }
+    var uploadFormatted: String { ByteFormatter.formatSpeed(uploadSpeed) }
+    var downloadFormatted: String { ByteFormatter.formatSpeed(downloadSpeed) }
+}
 
-    static func formatSpeed(_ bytesPerSec: UInt64) -> String {
-        let bytes = Double(bytesPerSec)
-        if bytes < 1_024 {
-            return "\(bytesPerSec) B/s"
-        } else if bytes < 1_048_576 {
-            return String(format: "%.1f KB/s", bytes / 1_024)
-        } else if bytes < 1_073_741_824 {
-            return String(format: "%.1f MB/s", bytes / 1_048_576)
-        } else {
-            return String(format: "%.1f GB/s", bytes / 1_073_741_824)
-        }
-    }
+struct EnergyHog {
+    let name: String
+    let cpuPercent: Double
 }
 
 struct BatteryMetrics {
@@ -70,6 +63,7 @@ struct BatteryMetrics {
     var health: Double = 0
     var timeRemaining: Int? = nil
     var isOptimizedHolding: Bool = false
+    var energyHogs: [EnergyHog] = []
 
     var statusText: String {
         if isOptimizedHolding {
@@ -87,7 +81,4 @@ struct BatteryMetrics {
         }
     }
 
-    var canTriggerFullCharge: Bool {
-        isOptimizedHolding && isPluggedIn
-    }
 }

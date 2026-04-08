@@ -10,8 +10,8 @@ struct PackageCleaner: Cleaner {
     private let cleanCommand: String
     private let cachePath: String?
 
-    var isAvailable: Bool {
-        ShellExecutor.toolExists(toolName)
+    func checkAvailable() async -> Bool {
+        await ShellExecutor.toolExists(toolName)
     }
 
     func scanSize() async -> UInt64 {

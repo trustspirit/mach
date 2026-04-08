@@ -58,12 +58,10 @@ final class SystemMetricsTests: XCTestCase {
     func testBatteryMetricsOptimizedHolding() {
         let bat = BatteryMetrics(chargePercent: 80, isCharging: false, isPluggedIn: true, cycleCount: 342, health: 92.0, timeRemaining: nil, isOptimizedHolding: true)
         XCTAssertEqual(bat.statusText, "Holding at 80%")
-        XCTAssertTrue(bat.canTriggerFullCharge)
     }
 
     func testBatteryMetricsFull() {
         let bat = BatteryMetrics(chargePercent: 100, isCharging: false, isPluggedIn: true, cycleCount: 342, health: 92.0, timeRemaining: nil, isOptimizedHolding: false)
         XCTAssertEqual(bat.statusText, "Fully charged")
-        XCTAssertFalse(bat.canTriggerFullCharge)
     }
 }
