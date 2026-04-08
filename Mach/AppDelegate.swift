@@ -152,7 +152,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let fillPath = NSBezierPath(roundedRect: fillRect, xRadius: 1, yRadius: 1)
 
             let fillColor: NSColor
-            if bat.isPluggedIn { fillColor = .systemGreen }
+            if self.monitorManager.battery.currentEnergyMode == .lowPower { fillColor = .systemYellow }
+            else if bat.isPluggedIn { fillColor = .systemGreen }
             else if bat.chargePercent <= 10 { fillColor = .systemRed }
             else if bat.chargePercent <= 20 { fillColor = .systemOrange }
             else { fillColor = isDark ? .white.withAlphaComponent(0.8) : .black.withAlphaComponent(0.6) }

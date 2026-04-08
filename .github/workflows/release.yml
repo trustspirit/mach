@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Extract version from tag
+        id: version
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: echo "version=${REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Release archive
+        run: |
+          xcodebuild archive \
+            -project Mach.xcodeproj \
+            -scheme Mach \
+            -configuration Release \
+            -archivePath build/Mach.xcarchive \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO
+
+      - name: Export and sign app
+        run: |
+          mkdir -p build/export
+          cp -R build/Mach.xcarchive/Products/Applications/Mach.app build/export/
+          codesign --force --deep --sign - build/export/Mach.app
+          codesign --verify --verbose build/export/Mach.app
+
+      - name: Create DMG
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p build/dmg
+          cp -R build/export/Mach.app build/dmg/
+          ln -s /Applications build/dmg/Applications
+          hdiutil create \
+            -volname "Mach" \
+            -srcfolder build/dmg \
+            -ov \
+            -format UDZO \
+            "build/Mach-${VERSION}-mac.dmg"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        with:
+          name: Mach v${{ steps.version.outputs.version }}
+          draft: false
+          generate_release_notes: true
+          files: build/Mach-${{ steps.version.outputs.version }}-mac.dmg
+          body: |
+            ## Install
+            1. Download the DMG file below
+            2. Open the DMG and drag **Mach** to Applications
+            3. Before first launch, run in Terminal:
+               ```
+               xattr -cr /Applications/Mach.app
+               ```
+               Or right-click the app > **Open** > **Open**
+
+            ### Requirements
+            - macOS 14.0 (Sonoma) or later

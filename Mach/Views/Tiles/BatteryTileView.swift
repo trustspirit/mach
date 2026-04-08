@@ -29,10 +29,29 @@ struct BatteryGaugeView: View {
     }
 }
 
+private struct YellowSwitchStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        let isOn = configuration.isOn
+        ZStack(alignment: isOn ? .trailing : .leading) {
+            Capsule()
+                .fill(isOn ? Color.yellow : Color.secondary.opacity(0.3))
+                .frame(width: 26, height: 15)
+            Circle()
+                .fill(.white)
+                .shadow(color: .black.opacity(0.15), radius: 1, y: 0.5)
+                .frame(width: 13, height: 13)
+                .padding(.horizontal, 1)
+        }
+        .animation(.easeInOut(duration: 0.15), value: isOn)
+        .onTapGesture { configuration.isOn.toggle() }
+    }
+}
+
 struct BatteryTileView: View {
     @ObservedObject var monitor: BatteryMonitor
 
     private var gaugeColor: Color {
+        if monitor.currentEnergyMode == .lowPower { return .yellow }
         if monitor.metrics.isPluggedIn { return .green }
         if monitor.metrics.chargePercent <= 10 { return .red }
         if monitor.metrics.chargePercent <= 20 { return .orange }
@@ -76,9 +95,7 @@ struct BatteryTileView: View {
                         Task { try? await monitor.setEnergyMode(isOn ? .lowPower : .automatic) }
                     }
                 ))
-                .toggleStyle(.switch).controlSize(.mini)
-                .tint(.yellow)
-                .labelsHidden()
+                .toggleStyle(YellowSwitchStyle())
                 .help("Low Power Mode")
             }.padding(10)
 
