@@ -12,10 +12,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var clickMonitor: Any?
     private let panelWidth: CGFloat = 300
 
-    // Animation state for RAM equalizer
+    // Cat animation state
     private var animTimer: Timer?
+    private var cpuTimer: Timer?
     private var animFrame: Int = 0
-    private let barCount = 4
+    private var currentCpuPct: Double = 0
+    private let catFrameCount = 5
+    private let catFrames: [NSImage] = {
+        (0..<5).compactMap { NSImage(named: "cat_\($0)") }
+    }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         syncAppearance()
@@ -26,15 +31,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.syncAppearance()
         }
 
-        statusItem = NSStatusBar.system.statusItem(withLength: 24)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.action = #selector(togglePanel)
             button.target = self
         }
         updateMenuBarIcon()
 
-
-        // Start equalizer animation (always runs for menu bar visibility)
+        // Start cat animation (speed tied to CPU usage)
+        startCpuTimer()
         startAnimTimer()
 
         let contentView = DashboardView()
@@ -73,54 +78,47 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func startAnimTimer() {
-        animTimer?.invalidate()
-        let t = Timer(timeInterval: 0.3, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            self.animFrame = (self.animFrame + 1) % 8
-            self.updateMenuBarIcon()
+    private func startCpuTimer() {
+        cpuTimer?.invalidate()
+        let t = Timer(timeInterval: 3.0, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            self.monitorManager.cpu.update()
+            let load = self.monitorManager.cpu.metrics.totalUsage
+            // RunCat formula: speed = max(1, load/5), interval = 500/speed ms
+            let speed = max(1.0, load / 5.0)
+            self.currentCpuPct = 0.5 / speed
         }
         RunLoop.main.add(t, forMode: .common)
-        animTimer = t
+        cpuTimer = t
+        // Initial readings
+        monitorManager.cpu.update()
+        monitorManager.cpu.update()
+        currentCpuPct = 0.5
+    }
+
+    private func startAnimTimer() {
+        animTimer?.invalidate()
+        scheduleNextFrame()
+    }
+
+    private func scheduleNextFrame() {
+        let interval = currentCpuPct
+
+        animTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            self.animFrame = (self.animFrame + 1) % self.catFrameCount
+            self.updateMenuBarIcon()
+            self.scheduleNextFrame()
+        }
     }
 
     private func updateMenuBarIcon() {
         guard let button = statusItem.button else { return }
+        guard animFrame < catFrames.count else { return }
 
-        let ramPct = monitorManager.ram.metrics.usagePercent / 100.0
-
-        // Template images: draw in black, macOS applies the correct tint automatically
-        let color = NSColor.black
-
-        let eqW: CGFloat = 16
-        let imgW: CGFloat = eqW
-        let imgH: CGFloat = 22
-
-        let img = NSImage(size: NSSize(width: imgW, height: imgH), flipped: false) { _ in
-            // RAM equalizer bars
-            let eqH: CGFloat = 14
-            let eqY: CGFloat = (imgH - eqH) / 2
-            let barW: CGFloat = 2.5
-            let barGap: CGFloat = 1.5
-            let frame = self.animFrame
-
-            for i in 0..<self.barCount {
-                let phase = Double(frame + i * 2) * .pi / 4
-                let wave = (sin(phase) + 1) / 2  // 0..1
-                let minH: CGFloat = 2
-                let maxH: CGFloat = eqH * CGFloat(min(ramPct + 0.15, 1.0))
-                let h = minH + CGFloat(wave) * (maxH - minH)
-                let x = CGFloat(i) * (barW + barGap)
-                let y = eqY
-
-                let barRect = NSRect(x: x, y: y, width: barW, height: h)
-                let barPath = NSBezierPath(roundedRect: barRect, xRadius: 1, yRadius: 1)
-                color.setFill()
-                barPath.fill()
-            }
-
-            return true
-        }
+        let frame = catFrames[animFrame]
+        let img = NSImage(size: NSSize(width: 28, height: 18))
+        img.addRepresentation(frame.representations.first!)
         img.isTemplate = true
         button.image = img
         button.imagePosition = .imageOnly
