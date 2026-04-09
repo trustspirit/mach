@@ -7,7 +7,6 @@ final class MonitorManager: ObservableObject {
     let gpu = GPUMonitor()
     let disk = DiskMonitor()
     let network = NetworkMonitor()
-    let battery = BatteryMonitor()
     let notifications = NotificationManager()
 
     @Published private(set) var isRunning = false
@@ -51,9 +50,6 @@ final class MonitorManager: ObservableObject {
         gpu.update()
         disk.update()
         network.update()
-        battery.update()
         notifications.checkThresholds(manager: self)
-        // Snapshot apps on main, detect hogs on background queue
-        battery.scheduleHogDetection()
     }
 }

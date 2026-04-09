@@ -3,10 +3,15 @@ import SwiftUI
 struct RAMTileView: View {
     @ObservedObject var monitor: RAMMonitor
     @State private var isPurging = false
-    @State private var purgeResult: Bool?
+    @State private var purgeResult: PurgeResult?
 
     private var purgeable: UInt64 {
-        monitor.metrics.inactive
+        monitor.metrics.purgeable
+    }
+
+    private struct PurgeResult {
+        let success: Bool
+        let freedBytes: Int64 // signed: can be negative if memory grew
     }
 
     var body: some View {
@@ -27,24 +32,37 @@ struct RAMTileView: View {
                     ProgressView().controlSize(.mini)
                     Text(" Purging…").font(.caption2).foregroundStyle(.secondary)
                     Spacer()
-                } else if let success = purgeResult {
+                } else if let result = purgeResult {
                     Spacer()
-                    Image(systemName: success ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .font(.caption2).foregroundStyle(success ? .green : .red)
-                    Text(success ? " Purged" : " Failed").font(.caption2).foregroundStyle(.secondary)
+                    Image(systemName: result.success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .font(.caption2).foregroundStyle(result.success ? .green : .red)
+                    if result.success && result.freedBytes > 0 {
+                        Text(" \(ByteFormatter.format(UInt64(result.freedBytes))) freed")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    } else {
+                        Text(result.success ? " Purged" : " Failed")
+                            .font(.caption2).foregroundStyle(.secondary)
+                    }
                     Spacer()
                 } else {
                     Button {
                         isPurging = true
                         purgeResult = nil
                         Task {
+                            let purgeableBefore = monitor.metrics.purgeable
                             let success: Bool
                             do {
                                 let result = try await PrivilegeHelper.runWithPrivileges("purge")
                                 success = result.exitCode == 0
                             } catch { success = false }
-                            await MainActor.run { isPurging = false; purgeResult = success }
-                            // Reset after 3 seconds so button reappears with updated purgeable size
+                            // Refresh metrics to capture post-purge state
+                            if success { monitor.update() }
+                            let purgeableAfter = monitor.metrics.purgeable
+                            let freed = Int64(purgeableBefore) - Int64(purgeableAfter)
+                            await MainActor.run {
+                                isPurging = false
+                                purgeResult = PurgeResult(success: success, freedBytes: freed)
+                            }
                             try? await Task.sleep(for: .seconds(3))
                             await MainActor.run { purgeResult = nil }
                         }

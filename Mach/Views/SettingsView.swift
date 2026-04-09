@@ -21,7 +21,6 @@ struct SettingsView: View {
                         thresholdRow("CPU", value: "90%")
                         thresholdRow("RAM", value: "90%")
                         thresholdRow("Disk", value: "95%")
-                        thresholdRow("Battery", value: "15%")
                         thresholdRow("Temperature", value: "95°C")
                     }
                 }

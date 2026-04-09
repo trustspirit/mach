@@ -14,6 +14,7 @@ struct RAMMetrics {
     var wired: UInt64 = 0
     var active: UInt64 = 0
     var inactive: UInt64 = 0
+    var purgeable: UInt64 = 0
 
     var usagePercent: Double {
         guard total > 0 else { return 0 }
@@ -50,35 +51,3 @@ struct NetworkMetrics {
     var downloadFormatted: String { ByteFormatter.formatSpeed(downloadSpeed) }
 }
 
-struct EnergyHog {
-    let name: String
-    let cpuPercent: Double
-}
-
-struct BatteryMetrics {
-    var chargePercent: Int = 0
-    var isCharging: Bool = false
-    var isPluggedIn: Bool = false
-    var cycleCount: Int = 0
-    var health: Double = 0
-    var timeRemaining: Int? = nil
-    var isOptimizedHolding: Bool = false
-    var energyHogs: [EnergyHog] = []
-
-    var statusText: String {
-        if isOptimizedHolding {
-            return "Holding at 80%"
-        } else if isCharging {
-            return "Charging"
-        } else if isPluggedIn && chargePercent == 100 {
-            return "Fully charged"
-        } else if let minutes = timeRemaining {
-            let h = minutes / 60
-            let m = minutes % 60
-            return "\(h):\(String(format: "%02d", m)) remaining"
-        } else {
-            return "On battery"
-        }
-    }
-
-}

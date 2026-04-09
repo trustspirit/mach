@@ -53,6 +53,7 @@ enum PrivilegeHelper {
         FileManager.default.fileExists(atPath: sudoersPath)
     }
 
+
     static func installPasswordlessSudo() async throws -> Bool {
         let lines = [
             "# Mach - passwordless access for system monitor commands",

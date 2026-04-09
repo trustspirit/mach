@@ -59,7 +59,6 @@ struct DashboardView: View {
                     DiskTileView(monitor: manager.disk)
                 }
                 NetworkTileView(monitor: manager.network)
-                BatteryTileView(monitor: manager.battery)
             }.padding(12)
         }.scrollIndicators(.hidden)
     }
