@@ -9,6 +9,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let monitorManager = MonitorManager()
     private var appearanceObserver: NSObjectProtocol?
     private var escMonitor: Any?
+    private var clickMonitor: Any?
     private let panelWidth: CGFloat = 300
 
     // Animation state for RAM equalizer
@@ -158,11 +159,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if event.keyCode == 53 { self?.closePanel(); return nil }
             return event
         }
+        clickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            self?.closePanel()
+        }
     }
 
     private func closePanel() {
         panel.orderOut(nil)
         monitorManager.popoverDidClose()
         if let m = escMonitor { NSEvent.removeMonitor(m); escMonitor = nil }
+        if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
     }
 }
