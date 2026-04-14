@@ -12,15 +12,15 @@ struct MemoryCleaner: Cleaner {
     }
 
     func clean() async throws -> CleanResult {
-        let purgeableBefore = Self.currentPurgeableMemory()
+        let freeBefore = Self.currentFreeMemory()
         let result = try await PrivilegeHelper.runWithPrivileges("purge")
         let success = result.exitCode == 0
-        let purgeableAfter = Self.currentPurgeableMemory()
-        let freed: UInt64 = purgeableBefore > purgeableAfter ? purgeableBefore - purgeableAfter : 0
+        let freeAfter = Self.currentFreeMemory()
+        let freed: UInt64 = freeAfter > freeBefore ? freeAfter - freeBefore : 0
         return CleanResult(itemId: id, freedBytes: freed, success: success, error: success ? nil : result.errorOutput)
     }
 
-    private static func currentPurgeableMemory() -> UInt64 {
+    private static func currentFreeMemory() -> UInt64 {
         let pageSize = UInt64(vm_kernel_page_size)
         let host = mach_host_self()
         defer { mach_port_deallocate(mach_task_self_, host) }
@@ -32,6 +32,6 @@ struct MemoryCleaner: Cleaner {
             }
         }
         guard result == KERN_SUCCESS else { return 0 }
-        return UInt64(stats.purgeable_count) * pageSize
+        return UInt64(stats.free_count) * pageSize
     }
 }

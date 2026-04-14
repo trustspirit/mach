@@ -9,6 +9,7 @@ struct CPUMetrics {
 struct RAMMetrics {
     var total: UInt64 = 0
     var used: UInt64 = 0
+    var free: UInt64 = 0
     var compressed: UInt64 = 0
     var swap: UInt64 = 0
     var wired: UInt64 = 0

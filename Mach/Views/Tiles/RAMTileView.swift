@@ -5,8 +5,8 @@ struct RAMTileView: View {
     @State private var isPurging = false
     @State private var purgeResult: PurgeResult?
 
-    private var purgeable: UInt64 {
-        monitor.metrics.purgeable
+    private var reclaimable: UInt64 {
+        monitor.metrics.inactive + monitor.metrics.purgeable
     }
 
     private struct PurgeResult {
@@ -49,16 +49,16 @@ struct RAMTileView: View {
                         isPurging = true
                         purgeResult = nil
                         Task {
-                            let purgeableBefore = monitor.metrics.purgeable
+                            monitor.update()
+                            let freeBefore = monitor.metrics.free
                             let success: Bool
                             do {
                                 let result = try await PrivilegeHelper.runWithPrivileges("purge")
                                 success = result.exitCode == 0
                             } catch { success = false }
-                            // Refresh metrics to capture post-purge state
                             if success { monitor.update() }
-                            let purgeableAfter = monitor.metrics.purgeable
-                            let freed = Int64(purgeableBefore) - Int64(purgeableAfter)
+                            let freeAfter = monitor.metrics.free
+                            let freed = Int64(freeAfter) - Int64(freeBefore)
                             await MainActor.run {
                                 isPurging = false
                                 purgeResult = PurgeResult(success: success, freedBytes: freed)
@@ -71,7 +71,7 @@ struct RAMTileView: View {
                             Image(systemName: "memory").font(.caption2)
                             Text("Purge").font(.caption2)
                             Text("·").foregroundStyle(.secondary)
-                            Text(ByteFormatter.format(purgeable)).font(.caption2).foregroundStyle(.secondary)
+                            Text(ByteFormatter.format(reclaimable)).font(.caption2).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
                     }

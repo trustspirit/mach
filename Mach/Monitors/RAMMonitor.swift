@@ -25,12 +25,13 @@ final class RAMMonitor: ObservableObject {
         let wired = UInt64(stats.wire_count) * pageSize
         let compressed = UInt64(stats.compressor_page_count) * pageSize
         let purgeable = UInt64(stats.purgeable_count) * pageSize
+        let free = UInt64(stats.free_count) * pageSize
         let used = active + wired + compressed
         var swapUsage = xsw_usage()
         var swapSize = MemoryLayout<xsw_usage>.size
         sysctlbyname("vm.swapusage", &swapUsage, &swapSize, nil, 0)
         let swap = UInt64(swapUsage.xsu_used)
-        metrics = RAMMetrics(total: totalMemory, used: used, compressed: compressed, swap: swap, wired: wired, active: active, inactive: inactive, purgeable: purgeable)
+        metrics = RAMMetrics(total: totalMemory, used: used, free: free, compressed: compressed, swap: swap, wired: wired, active: active, inactive: inactive, purgeable: purgeable)
         history.append(metrics.usagePercent)
         if history.count > maxHistory { history.removeFirst() }
     }
