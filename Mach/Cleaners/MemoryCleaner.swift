@@ -22,11 +22,13 @@ struct MemoryCleaner: Cleaner {
 
     private static func currentPurgeableMemory() -> UInt64 {
         let pageSize = UInt64(vm_kernel_page_size)
+        let host = mach_host_self()
+        defer { mach_port_deallocate(mach_task_self_, host) }
         var stats = vm_statistics64()
         var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
         let result = withUnsafeMutablePointer(to: &stats) { ptr in
             ptr.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { intPtr in
-                host_statistics64(mach_host_self(), HOST_VM_INFO64, intPtr, &count)
+                host_statistics64(host, HOST_VM_INFO64, intPtr, &count)
             }
         }
         guard result == KERN_SUCCESS else { return 0 }

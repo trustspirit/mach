@@ -8,6 +8,8 @@ final class RAMMonitor: ObservableObject {
     private let pageSize = UInt64(vm_kernel_page_size)
     private let hostPort: mach_port_t = mach_host_self()
 
+    deinit { mach_port_deallocate(mach_task_self_, hostPort) }
+
     func update() {
         let totalMemory = ProcessInfo.processInfo.physicalMemory
         var stats = vm_statistics64()

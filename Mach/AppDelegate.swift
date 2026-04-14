@@ -17,9 +17,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var cpuTimer: Timer?
     private var animFrame: Int = 0
     private var currentCpuPct: Double = 0
-    private let catFrameCount = 5
-    private let catFrames: [NSImage] = {
-        (0..<5).compactMap { NSImage(named: "cat_\($0)") }
+    private let menuBarFrames: [NSImage] = {
+        (0..<5).compactMap { i -> NSImage? in
+            guard let source = NSImage(named: "cat_\(i)"),
+                  let rep = source.representations.first else { return nil }
+            let img = NSImage(size: NSSize(width: 28, height: 18))
+            img.addRepresentation(rep)
+            img.isTemplate = true
+            return img
+        }
     }()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -35,6 +41,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let button = statusItem.button {
             button.action = #selector(togglePanel)
             button.target = self
+            button.imagePosition = .imageOnly
+            button.title = ""
         }
         updateMenuBarIcon()
 
@@ -80,20 +88,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func startCpuTimer() {
         cpuTimer?.invalidate()
+        // Prime CPU readings so metrics are available immediately
+        monitorManager.cpu.update()
+        monitorManager.cpu.update()
+        currentCpuPct = 0.5
         let t = Timer(timeInterval: 3.0, repeats: true) { [weak self] _ in
             guard let self else { return }
-            self.monitorManager.cpu.update()
+            // Read latest CPU data (updated by MonitorManager); no duplicate polling
             let load = self.monitorManager.cpu.metrics.totalUsage
-            // RunCat formula: speed = max(1, load/5), interval = 500/speed ms
             let speed = max(1.0, load / 5.0)
             self.currentCpuPct = 0.5 / speed
         }
         RunLoop.main.add(t, forMode: .common)
         cpuTimer = t
-        // Initial readings
-        monitorManager.cpu.update()
-        monitorManager.cpu.update()
-        currentCpuPct = 0.5
     }
 
     private func startAnimTimer() {
@@ -106,7 +113,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         animTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             guard let self else { return }
-            self.animFrame = (self.animFrame + 1) % self.catFrameCount
+            self.animFrame = (self.animFrame + 1) % self.menuBarFrames.count
             self.updateMenuBarIcon()
             self.scheduleNextFrame()
         }
@@ -114,15 +121,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateMenuBarIcon() {
         guard let button = statusItem.button else { return }
-        guard animFrame < catFrames.count else { return }
-
-        let frame = catFrames[animFrame]
-        let img = NSImage(size: NSSize(width: 28, height: 18))
-        img.addRepresentation(frame.representations.first!)
-        img.isTemplate = true
-        button.image = img
-        button.imagePosition = .imageOnly
-        button.title = ""
+        guard animFrame < menuBarFrames.count else { return }
+        button.image = menuBarFrames[animFrame]
     }
 
     private func syncAppearance() {
@@ -167,5 +167,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         monitorManager.popoverDidClose()
         if let m = escMonitor { NSEvent.removeMonitor(m); escMonitor = nil }
         if let m = clickMonitor { NSEvent.removeMonitor(m); clickMonitor = nil }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        cpuTimer?.invalidate()
+        animTimer?.invalidate()
+        monitorManager.stop()
+        if let observer = appearanceObserver {
+            DistributedNotificationCenter.default().removeObserver(observer)
+            appearanceObserver = nil
+        }
     }
 }

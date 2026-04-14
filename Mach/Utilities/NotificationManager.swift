@@ -35,7 +35,7 @@ final class NotificationManager: ObservableObject {
         case .disk: content.body = String(format: "Disk usage at %.0f%%", value)
         case .temperature: content.body = String(format: "Temperature at %.0f°C", value)
         }
-        let request = UNNotificationRequest(identifier: "mach-\(metric.rawValue)-\(Date().timeIntervalSince1970)", content: content, trigger: nil)
+        let request = UNNotificationRequest(identifier: "mach-\(metric.rawValue)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
     }
 

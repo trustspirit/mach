@@ -8,6 +8,8 @@ final class CPUMonitor: ObservableObject {
     private var previousTicks: [(user: UInt64, system: UInt64, idle: UInt64, nice: UInt64)] = []
     private let hostPort: mach_port_t = mach_host_self()
 
+    deinit { mach_port_deallocate(mach_task_self_, hostPort) }
+
     func update() {
         var numCPU: natural_t = 0
         var cpuInfo: processor_info_array_t?
